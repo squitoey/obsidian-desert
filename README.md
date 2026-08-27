@@ -204,9 +204,26 @@ git push && git push --tags
 ```
 
 `.github/workflows/release.yml` picks up the tag and creates a **draft**
-release with `manifest.json` and `theme.css` attached. The tag must match
-`version` in `manifest.json` exactly — that's how Obsidian finds the release
-to download. Publish the draft when you're happy with the notes.
+release with `manifest.json` and `theme.css` attached.
+
+**Publish the draft.** A draft is not visible outside the repository, so
+Obsidian cannot see it — the community tool reports *"No release matches your
+manifest version"* until it is published.
+
+```sh
+gh release edit 1.0.1 --draft=false
+```
+
+Three things have to line up or the directory will not find the release:
+
+| Requirement | Why |
+| --- | --- |
+| Tag has **no `v` prefix** | Obsidian matches `manifest.json`'s `version` string exactly. `.npmrc` sets `tag-version-prefix=""` so `npm version` produces `1.0.1`, not npm's default `v1.0.1`. |
+| Release is **published**, not draft | Drafts are private to the repo. |
+| Workflow has `permissions: contents: write` | Repositories default to read-only tokens; without it `gh release create` fails with `HTTP 403: Resource not accessible by integration`. |
+
+The workflow checks the first of these itself and fails the job with a clear
+message rather than creating a mismatched release. Publish the draft when you're happy with the notes.
 
 ## Credit
 

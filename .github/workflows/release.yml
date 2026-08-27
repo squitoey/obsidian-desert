@@ -9,6 +9,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Required for `gh release create`. Without it the job inherits the
+    # repository default, which is read-only, and the API returns
+    # "HTTP 403: Resource not accessible by integration".
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v7
 
@@ -17,6 +23,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          version=$(python3 -c "import json;print(json.load(open('manifest.json'))['version'])")
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag '$tag' does not match manifest.json version '$version'."
+            echo "::error::Obsidian matches releases by version exactly - no 'v' prefix."
+            exit 1
+          fi
 
           gh release create "$tag" \
             --title="$tag" \
